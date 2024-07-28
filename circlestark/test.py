@@ -2,10 +2,11 @@ import sys
 from fields import S, M, B, ES, EM, EB
 from fft import fft, inv_fft, log2
 from fri import prove_low_degree, verify_low_degree
-from zorch.m31 import (
-    zeros, array, arange, append, tobytes, add, sub, mul, cp as np,
-    mul_ext, modinv_ext, sum as m31_sum, eq, iszero, M31
-)
+# from zorch.m31 import (
+#     zeros, array, arange, append, tobytes, add, sub, mul, cp as np,
+#     mul_ext, modinv_ext, sum as m31_sum, eq, iszero, M31
+# )
+import m31
 from utils import (
     pad_to, mk_junk_data, to_extension_field
 )
@@ -32,7 +33,7 @@ from fast_fft import (
 from poseidon import (
     poseidon_constraint_check, fill_poseidon_trace, poseidon_hash
 )
-import cupy as cp
+import numpy as np
 
 import time
 import cProfile

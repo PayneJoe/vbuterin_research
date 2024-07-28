@@ -1,10 +1,13 @@
 from merkle import merkelize, hash, get_branch, verify_branch
-from zorch.m31 import (
-    zeros, array, arange, append, tobytes, add, sub, mul, cp as np,
-    mul_ext, modinv, modinv_ext, sum as m31_sum, M31, eq, iszero
-)
-from zorch.m31_circle import Point, ExtendedPoint
-M31SQ = M31 ** 2
+# from zorch.m31 import (
+#     zeros, array, arange, append, tobytes, add, sub, mul, cp as np,
+#     mul_ext, modinv, modinv_ext, sum as m31_sum, M31, eq, iszero
+# )
+# from zorch.m31_circle import Point, ExtendedPoint
+import m31 
+import circle
+import numpy as np
+M31SQ = m31.M31 ** 2
 HALF = 2**30
 
 def log2(x):
@@ -13,16 +16,16 @@ def log2(x):
 
 # Pads an array to a given length
 def pad_to(arr, new_len):
-    padding = zeros((new_len - arr.shape[0],) + arr.shape[1:])
-    return append(arr, padding)
+    padding = m31.zeros((new_len - arr.shape[0],) + arr.shape[1:])
+    return m31.append(arr, padding)
 
 # Confirms that the coefficients respect a given degree bound
 def confirm_max_degree(coeffs, bound):
-    return iszero(coeffs[bound:])
+    return m31.iszero(coeffs[bound:])
 
 # Merkelize a list of items
 def merkelize_top_dimension(x):
-    blob = tobytes(x % M31)
+    blob = m31.tobytes(x % m31.M31)
     size = len(blob) // x.shape[0]
     return merkelize([blob[i:i+size] for i in range(0, len(blob), size)])
 
@@ -37,35 +40,35 @@ def to_ext_if_needed(obj, object_dim):
         return obj
 
 def to_extension_field(values):
-    o = zeros(values.shape + (4,))
+    o = m31.zeros(values.shape + (4,))
     v = values.reshape(values.shape+(1,))
     o[...,:1] = v
     return o
 
-one_ext = array([1,0,0,0])
+one_ext = m31.array([1,0,0,0])
 
 # Convert an extension field element to a point in the extension
 # field. Guarantees no properties about the point; the use case
 # is purely "pick a random point" for Fiat-Shamir-style protocols
 def projective_to_point(t):
-    t2 = mul_ext(t, t)
-    inv_1pt2 = modinv_ext(add(one_ext, t2))
-    return ExtendedPoint(
-        mul_ext(sub(one_ext, t2), inv_1pt2),
-        mul_ext(add(t, t), inv_1pt2)
+    t2 = m31.mul_ext(t, t)
+    inv_1pt2 = modinv_ext(m31.add(one_ext, t2))
+    return circle.ExtendedPoint(
+        m31.mul_ext(m31.sub(one_ext, t2), inv_1pt2),
+        m31.mul_ext(m31.add(t, t), inv_1pt2)
     )
 
 # Takes as input a N*k array of values, and a vector k extension field
 # elements, and computes the size-N linear combination
 def fold(vector, fold_factors):
     return m31_sum(
-        mul(vector.reshape(vector.shape+(1,)), fold_factors),
+        m31.mul(vector.reshape(vector.shape+(1,)), fold_factors),
         axis=-2
     )
 
 # Same put takes as input a N*k array of extension field elements
 def fold_ext(vector, fold_factors):
-    return m31_sum(mul_ext(vector, fold_factors), axis=-2)
+    return m31_sum(m31.mul_ext(vector, fold_factors), axis=-2)
 
 # Evaluates the simplest polynomial that equals zero across
 # the domain of size `degree`, at the given coords. Supports
@@ -73,14 +76,14 @@ def fold_ext(vector, fold_factors):
 def eval_zpoly_at(degree, coords, is_extended=False):
     if is_extended:
         Z = coords.x
-        one = array([1,0,0,0]).reshape((1,) * (Z.ndim - 1) + (4,))
-        _mul = mul_ext
+        one = m31.array([1,0,0,0]).reshape((1,) * (Z.ndim - 1) + (4,))
+        _mul = m31.mul_ext
     else:
         Z = coords.x
-        one = array([1]).reshape((1,) * Z.ndim)
-        _mul = mul
+        one = m31.array([1]).reshape((1,) * Z.ndim)
+        _mul = m31.mul
     for i in range(1, log2(degree)):
-        Z = sub(2 * _mul(Z, Z) % M31, one)
+        Z = m31.sub(2 * _mul(Z, Z) % m31.M31, one)
     return Z
 
 # Converts a list into "reverse bit order", eg:
@@ -131,12 +134,12 @@ def get_challenges(entropy, domain_size, num_challenges):
     challenge_data = b''.join(
         hash(entropy + bytes([i//256, i%256])) for i in range((num_challenges + 7) // 8)
     )
-    return array([
+    return m31.array([
         int.from_bytes(challenge_data[i:i+4], 'little') % domain_size
         for i in range(0, num_challenges * 4, 4)
     ])
 
 # Generates some pseudorandom numbers mod 2**31
 def mk_junk_data(length):
-    a = arange(length, length*2)
-    return ((3**a) ^ (7**a)) % M31
+    a = m31.arange(length, length*2)
+    return ((3**a) ^ (7**a)) % m31.M31
