@@ -1,6 +1,6 @@
 ## naive implementation of m31 and qm31
-## cm31 = m31[X] / X^2 - alpha, where i^2 = alpha = -1
-## qm31 = cm31[X] / X^2 - beta, where u^2 = beta = i + 2 
+## cm31 = m31[i] / X^2 - alpha, where i^2 = alpha = -1
+## qm31 = cm31[u] / X^2 - beta, where u^2 = beta = i + 2 
 
 import numpy as np
 M31 = modulus = 2**31-1
@@ -50,10 +50,10 @@ def modinv(v):
     assert((v == 0).sum() == 0)
     return pow(v, bin(M31 - 2)[2:])
 
-## [(a + b * i) + (c + d * i) * j]^{-1} 
-## 1. t = (a + b * i)^2 - (c + d * i)^2
+## [(a + b * i) + (c + d * i) * u]^{-1} 
+## 1. t = (a + b * i)^2 - (c + d * i)^2 * (2 + i) 
 ## 2. 1 / t 
-## 3. t^{-1} * ((a + b * i) - (c + d * i) * j)
+## 3. t^{-1} * ((a + b * i) - (c + d * i) * u)
 def modinv_ext(v):
     assert(v.shape[-1] == 4)
     aa, bb, cc, dd = mul(v[:, 0], v[:, 0]), mul(v[:, 1], v[:, 1]), mul(v[:, 2], v[:, 2]), mul(v[:, 3], v[:, 3])
